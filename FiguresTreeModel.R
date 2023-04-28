@@ -3,10 +3,9 @@
 
 library(phytools)
 library(ape)
-#library(treeman)
-library(TeachingDemos)
 library(phangorn)
 library(ggplot2)
+library(cowplot)
 
 
 tt = read.nexus("SinoTibetanSubset.nex")
@@ -88,8 +87,7 @@ col="purple"
 p.age = ggplot(aged, aes(x=age)) +
   xlim(0, 15000) +
   geom_density(fill=col, colour=col, alpha=.3)
-
-library(cowplot)               
+           
 plot_grid(p.age, p.age.group, align="v", axis="rblt", ncol=1)
 
 
