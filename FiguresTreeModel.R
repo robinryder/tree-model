@@ -12,7 +12,7 @@ tt = read.nexus("SinoTibetanSubset.nex")
 
 # Consensus topology
 cons = consensus(tt, p=.5, rooted=T)
-cons$node.label = round(cons$node.label, 2)
+cons$node.label = round(cons$node.label * 100, 0)
 plot.phylo(cons, show.node.label = T) 
 
 # Consensus topology + branch lengths. This might take a couple of minutes
@@ -33,8 +33,8 @@ mcc$node.label[getRoot(mcc)] = NA
 plot(mcc, show.node.label = T, main="MCC")
 
 
-
-densiTree(tt, alpha=.008, consensus = cons, main="Densitree")
+# Densitree
+densiTree(tt, alpha=.005, consensus = cons, main="Densitree")
 
 
 
