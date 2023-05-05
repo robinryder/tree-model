@@ -243,14 +243,14 @@ recage.tibetan = reconstructed.age("xval/Tibetan.nex",
 
 df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.tibetan,
                          recage.burmish, recage.commonchinese, recage.sinitic, recage.tibetan))
-df$type = rep(c("Constraint", "Reconstructed"), each=4)
+df$type = rep(c("Known", "Inferred"), each=4)
 df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
 
 fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
   geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), size=2) +
   ylab("time (years BP)") +
   scale_color_few() +
-  # coord_equal() +
+  ylim(c(0,3000)) +
   theme_minimal() +
   theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
 
