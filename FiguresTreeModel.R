@@ -246,12 +246,16 @@ df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.ti
 df$type = rep(c("Constraint", "Reconstructed"), each=4)
 df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
 
-ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
-  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), size=1) +
-  ylab("Years BP") +
+fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
+  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), size=2) +
+  ylab("time (years BP)") +
   scale_color_few() +
   # coord_equal() +
   theme_minimal() +
-  theme(legend.position = "top", aspect.ratio = .6)
-  # theme(legend.position = c(1,.5), legend.justification = c(1,.5))
+  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
 
+pdf("fig_xages.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_xages
+dev.off()
+embedFonts("fig_xages.pdf")
+plot_crop("fig_xages.pdf")
