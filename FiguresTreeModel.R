@@ -36,7 +36,7 @@ plot_crop("fig_consensus.pdf")
 
 pdf("fig_densitree.pdf", pointsize=10, width = 6.5, height = 7, family = "URWPalladio")
 densiTree(tt, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=.9, scale.bar = TRUE)
-title(xlab="Time BP (millenia)")
+title(xlab="time (millenia BP)")
 dev.off()
 embedFonts("fig_densitree.pdf")
 knitr::plot_crop("fig_densitree.pdf")
@@ -104,11 +104,25 @@ embedFonts("fig_ageboth.pdf")
 knitr::plot_crop("fig_ageboth.pdf")
 
 library(ggridges)
-ggplot(aged2, aes(x = age, y = outgroup, group = outgroup, height = stat(density))) +
-  geom_density_ridges(fill = few_pal("Light")(2)[1], color = "gray30") +
+library(tidyverse)
+fig_ageoutgroup <- aged2 %>% 
+  as_tibble() %>% 
+  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese + Sal", "Chinese", "all"))) %>% 
+  mutate(outgroup = fct_relabel(outgroup, ~ str_replace(.x, "( *\\+)|(- *)", " & "))) %>% 
+  ggplot(aes(x = age, y = outgroup, fill = outgroup, height = stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
+  xlim(0, 15000) +
   theme_minimal() +
-  xlab("age (years)") +
+  xlab("time (years BP)") +
   theme(axis.text.y.left = element_text(size = 11))
+fig_ageoutgroup
+pdf("fig_ageoutgroup.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_ageoutgroup
+dev.off()
+embedFonts("fig_ageoutgroup.pdf")
+knitr::plot_crop("fig_ageoutgroup.pdf")
 
 ###### MRCA ages
 
