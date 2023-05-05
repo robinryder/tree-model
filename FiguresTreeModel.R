@@ -36,7 +36,7 @@ plot_crop("fig_consensus.pdf")
 
 pdf("fig_densitree.pdf", pointsize=10, width = 6.5, height = 7, family = "URWPalladio")
 densiTree(tt, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=.9, scale.bar = TRUE)
-title(xlab="Time (millenia)")
+title(xlab="Time BP (millenia)")
 dev.off()
 embedFonts("fig_densitree.pdf")
 knitr::plot_crop("fig_densitree.pdf")
