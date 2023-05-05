@@ -116,8 +116,8 @@ fig_ageoutgroup <- aged2 %>%
   xlim(0, 15000) +
   theme_minimal() +
   xlab("time (years BP)") +
-  theme(axis.text.y.left = element_text(size = 11))
-fig_ageoutgroup
+  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
+
 pdf("fig_ageoutgroup.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
 fig_ageoutgroup
 dev.off()
@@ -166,15 +166,34 @@ title <- ggdraw() + draw_label("Age of MRCA", fontface = "bold")
 plot_grid(title, p.age.topo.all, p.age.topo.group, align = "v", axis = "rblt", ncol = 1, rel_heights = c(0.2, 1, 1))
 
 library(tidyverse)
-df %>% 
+fig_agemono <- df %>% 
   mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
   bind_rows(mutate(df, group = "all")) %>% 
-  ggplot(aes(x = age, y = group, height = stat(density))) +
-  geom_density_ridges(fill = few_pal("Light")(2)[1], color = "gray30") +
+  ggplot(aes(x = age * 1000, y = fct_rev(group), fill = group, height = stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
+  xlim(0, 15000) +
   theme_minimal() +
-  xlab("age (years)") +
-  theme(axis.text.y.left = element_text(size = 11))
+  xlab("time (years BP)") +
+  ylab(NULL) +
+  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
 
+# df %>% 
+#   mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
+#   bind_rows(mutate(df, group = "all")) %>%
+#   ggplot(aes(x = age*1000, fill = group, group = group)) +
+#   geom_density(alpha = .5) +
+#   scale_fill_few(guide = "none") +
+#   xlim(0, 15000) +
+#   theme_minimal() +
+#   xlab("time (years BP)")
+
+pdf("fig_agemono.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_agemono
+dev.off()
+embedFonts("fig_agemono.pdf")
+knitr::plot_crop("fig_agemono.pdf")
 
 # Cross-validation of dates -----------------------------------------------
 library(HDInterval)
