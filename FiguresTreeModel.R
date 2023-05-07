@@ -69,7 +69,7 @@ outgroup <- sapply(tt, find.outgroup, nl = 22)
 head(sort(table(outgroup), dec = T), 3)
 
 outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese"] <- "Chinese"
-outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese"] <- "Chinese + Sal"
+outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese"] <- "Chinese-Sal"
 outgroup[outgroup == "Bokar_Tani Yidu"] <- "Tani-Yidu"
 
 root.age <- function(tree) {
@@ -77,7 +77,7 @@ root.age <- function(tree) {
 }
 ra <- sapply(tt, root.age)
 aged <- data.frame(age = ra * 1000, outgroup = outgroup)
-keep <- outgroup %in% c("Chinese", "Tani-Yidu", "Chinese + Sal")
+keep <- outgroup %in% c("Chinese", "Tani-Yidu", "Chinese-Sal")
 
 aged2 <- rbind(aged[keep, ], data.frame(age = ra * 1000, outgroup = "all"))
 
@@ -107,8 +107,7 @@ library(ggridges)
 library(tidyverse)
 fig_ageoutgroup <- aged2 %>% 
   as_tibble() %>% 
-  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese + Sal", "Chinese", "all"))) %>% 
-  mutate(outgroup = fct_relabel(outgroup, ~ str_replace(.x, "( *\\+)|(- *)", " & "))) %>% 
+  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "all"))) %>% 
   ggplot(aes(x = age, y = outgroup, fill = outgroup, height = stat(density))) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
@@ -243,12 +242,13 @@ recage.tibetan = reconstructed.age("xval/Tibetan.nex",
 
 df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.tibetan,
                          recage.burmish, recage.commonchinese, recage.sinitic, recage.tibetan))
-df$type = rep(c("Known", "Inferred"), each=4)
+df$Type = rep(c("known", "inferred"), each=4)
 df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
 
 fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
-  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), size=2) +
+  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
   ylab("time (years BP)") +
+  xlab("node") +
   scale_color_few() +
   ylim(c(0,3000)) +
   theme_minimal() +
