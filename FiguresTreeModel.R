@@ -1,4 +1,4 @@
-# Code for figures from chapter on The Tree Model (Jacques, Pellard & Ryder 2023)
+# Code for figures from chapter on The Tree Model (Pellard, Ryder & Jacques 2023)
 # RJR March 2023
 
 library(phytools)
@@ -31,6 +31,18 @@ dev.off()
 embedFonts("fig_consensus.pdf")
 plot_crop("fig_consensus.pdf")
 
+
+# MCC tree --------------------------------------------------------------------------------------------------------
+
+mcct <- maxCladeCred(tt)
+mcct$node.label <- round(mcct$node.label * 100, 0)
+mcct$root.edge <- .15
+pdf("fig_mcc.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
+plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(mcct$node.label, frame="none", adj = c(-0.2,.5), cex = .85)
+dev.off()
+embedFonts("fig_mcc.pdf")
+plot_crop("fig_mcc.pdf")
 
 # Densitree ---------------------------------------------------------------
 
