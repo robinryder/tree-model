@@ -8,6 +8,7 @@ library(ggplot2)
 library(cowplot)
 library(ggthemes)
 library(knitr)
+library(tidyverse)
 
 # Import data -------------------------------------------------------------
 
@@ -26,7 +27,7 @@ ct$root.edge <- .15
 
 pdf("fig_consensus.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
 plot(ct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(ct$node.label, frame="none", adj = c(-0.2,.5), cex = .85)
+nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .8)
 dev.off()
 embedFonts("fig_consensus.pdf")
 plot_crop("fig_consensus.pdf")
@@ -39,16 +40,17 @@ mcct$node.label <- round(mcct$node.label * 100, 0)
 mcct$root.edge <- .15
 pdf("fig_mcc.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
 plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(mcct$node.label, frame="none", adj = c(-0.2,.5), cex = .85)
+nodelabels(c(NA, mcct$node.label[-1]), frame="none", adj = c(-.15,.75), cex = .8)
 dev.off()
 embedFonts("fig_mcc.pdf")
 plot_crop("fig_mcc.pdf")
 
 # Densitree ---------------------------------------------------------------
-
+tt_scaled <- lapply(tt, function(x) {x$edge.length <- x$edge.length * 1000; return(x)})
+class(tt_scaled) <- "multiPhylo"
 pdf("fig_densitree.pdf", pointsize=10, width = 6.5, height = 7, family = "URWPalladio")
-densiTree(tt, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=.9, scale.bar = TRUE)
-title(xlab="time (millenia BP)")
+densiTree(tt_scaled, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=1, scale.bar = TRUE)
+title(xlab="years BP")
 dev.off()
 embedFonts("fig_densitree.pdf")
 knitr::plot_crop("fig_densitree.pdf")
@@ -116,7 +118,6 @@ embedFonts("fig_ageboth.pdf")
 knitr::plot_crop("fig_ageboth.pdf")
 
 library(ggridges)
-library(tidyverse)
 fig_ageoutgroup <- aged2 %>% 
   as_tibble() %>% 
   mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "all"))) %>% 
@@ -124,9 +125,12 @@ fig_ageoutgroup <- aged2 %>%
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
   scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
-  xlim(0, 15000) +
+  # xlim(0, 15000) +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
   theme_minimal() +
-  xlab("time (years BP)") +
+  xlab("years BP") +
+  ylab("first branch") +
   theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
 
 pdf("fig_ageoutgroup.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
@@ -184,9 +188,11 @@ fig_agemono <- df %>%
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
   scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
-  xlim(0, 15000) +
+  # xlim(0, 15000) +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
   theme_minimal() +
-  xlab("time (years BP)") +
+  xlab("years BP") +
   ylab(NULL) +
   theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
 
@@ -259,10 +265,24 @@ df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
 
 fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
   geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
-  ylab("time (years BP)") +
+  ylab("years BP") +
   xlab("node") +
   scale_color_few() +
-  ylim(c(0,3000)) +
+  # ylim(c(0,3000)) +
+  scale_y_reverse(limits = c(3000, 0)) +
+  scale_x_discrete(expand = expansion(add = c(0.25, 1.25))) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
+
+fig_xages <- df |> 
+  mutate(clade = str_replace(clade, " ", "\n")) |> 
+  ggplot(aes(y=clade, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
+  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
+  xlab("years BP") +
+  ylab(NULL) +
+  scale_color_few(name = NULL) +
+  scale_x_reverse(limits = c(3000, 0)) +
+  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25))) +
   theme_minimal() +
   theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
 
