@@ -1,2 +1,2 @@
 # tree-model
-Code for the chapter "The Tree Model" (Jacques, Pellard &amp; Ryder 2023)
+Code for the chapter "The Tree Model" (Pellard, Ryder &amp; Jacques 2024)
