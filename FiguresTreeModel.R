@@ -1,4 +1,4 @@
-# Code for figures from chapter on The Tree Model (Jacques, Pellard & Ryder 2023)
+# Code for figures from chapter on The Tree Model (Pellard, Ryder & Jacques 2023)
 # RJR March 2023
 
 library(phytools)
@@ -8,6 +8,7 @@ library(ggplot2)
 library(cowplot)
 library(ggthemes)
 library(knitr)
+library(tidyverse)
 
 # Import data -------------------------------------------------------------
 
@@ -26,17 +27,30 @@ ct$root.edge <- .15
 
 pdf("fig_consensus.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
 plot(ct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(ct$node.label, frame="none", adj = c(-0.2,.5), cex = .85)
+nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .8)
 dev.off()
 embedFonts("fig_consensus.pdf")
 plot_crop("fig_consensus.pdf")
 
 
-# Densitree ---------------------------------------------------------------
+# MCC tree --------------------------------------------------------------------------------------------------------
 
+mcct <- maxCladeCred(tt)
+mcct$node.label <- round(mcct$node.label * 100, 0)
+mcct$root.edge <- .15
+pdf("fig_mcc.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
+plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(c(NA, mcct$node.label[-1]), frame="none", adj = c(-.15,.75), cex = .8)
+dev.off()
+embedFonts("fig_mcc.pdf")
+plot_crop("fig_mcc.pdf")
+
+# Densitree ---------------------------------------------------------------
+tt_scaled <- lapply(tt, function(x) {x$edge.length <- x$edge.length * 1000; return(x)})
+class(tt_scaled) <- "multiPhylo"
 pdf("fig_densitree.pdf", pointsize=10, width = 6.5, height = 7, family = "URWPalladio")
-densiTree(tt, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=.9, scale.bar = TRUE)
-title(xlab="Time BP (millenia)")
+densiTree(tt_scaled, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=1, scale.bar = TRUE)
+title(xlab="years BP")
 dev.off()
 embedFonts("fig_densitree.pdf")
 knitr::plot_crop("fig_densitree.pdf")
@@ -69,7 +83,7 @@ outgroup <- sapply(tt, find.outgroup, nl = 22)
 head(sort(table(outgroup), dec = T), 3)
 
 outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese"] <- "Chinese"
-outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese"] <- "Chinese + Sal"
+outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese"] <- "Chinese-Sal"
 outgroup[outgroup == "Bokar_Tani Yidu"] <- "Tani-Yidu"
 
 root.age <- function(tree) {
@@ -77,7 +91,7 @@ root.age <- function(tree) {
 }
 ra <- sapply(tt, root.age)
 aged <- data.frame(age = ra * 1000, outgroup = outgroup)
-keep <- outgroup %in% c("Chinese", "Tani-Yidu", "Chinese + Sal")
+keep <- outgroup %in% c("Chinese", "Tani-Yidu", "Chinese-Sal")
 
 aged2 <- rbind(aged[keep, ], data.frame(age = ra * 1000, outgroup = "all"))
 
@@ -104,11 +118,26 @@ embedFonts("fig_ageboth.pdf")
 knitr::plot_crop("fig_ageboth.pdf")
 
 library(ggridges)
-ggplot(aged2, aes(x = age, y = outgroup, group = outgroup, height = stat(density))) +
-  geom_density_ridges(fill = few_pal("Light")(2)[1], color = "gray30") +
+fig_ageoutgroup <- aged2 %>% 
+  as_tibble() %>% 
+  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "all"))) %>% 
+  ggplot(aes(x = age, y = outgroup, fill = outgroup, height = stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
+  # xlim(0, 15000) +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
   theme_minimal() +
-  xlab("age (years)") +
-  theme(axis.text.y.left = element_text(size = 11))
+  xlab("years BP") +
+  ylab("first branch") +
+  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
+
+pdf("fig_ageoutgroup.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_ageoutgroup
+dev.off()
+embedFonts("fig_ageoutgroup.pdf")
+knitr::plot_crop("fig_ageoutgroup.pdf")
 
 ###### MRCA ages
 
@@ -152,15 +181,36 @@ title <- ggdraw() + draw_label("Age of MRCA", fontface = "bold")
 plot_grid(title, p.age.topo.all, p.age.topo.group, align = "v", axis = "rblt", ncol = 1, rel_heights = c(0.2, 1, 1))
 
 library(tidyverse)
-df %>% 
+fig_agemono <- df %>% 
   mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
   bind_rows(mutate(df, group = "all")) %>% 
-  ggplot(aes(x = age, y = group, height = stat(density))) +
-  geom_density_ridges(fill = few_pal("Light")(2)[1], color = "gray30") +
+  ggplot(aes(x = age * 1000, y = fct_rev(group), fill = group, height = stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
+  # xlim(0, 15000) +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
   theme_minimal() +
-  xlab("age (years)") +
-  theme(axis.text.y.left = element_text(size = 11))
+  xlab("years BP") +
+  ylab(NULL) +
+  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
 
+# df %>% 
+#   mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
+#   bind_rows(mutate(df, group = "all")) %>%
+#   ggplot(aes(x = age*1000, fill = group, group = group)) +
+#   geom_density(alpha = .5) +
+#   scale_fill_few(guide = "none") +
+#   xlim(0, 15000) +
+#   theme_minimal() +
+#   xlab("time (years BP)")
+
+pdf("fig_agemono.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_agemono
+dev.off()
+embedFonts("fig_agemono.pdf")
+knitr::plot_crop("fig_agemono.pdf")
 
 # Cross-validation of dates -----------------------------------------------
 library(HDInterval)
@@ -210,15 +260,34 @@ recage.tibetan = reconstructed.age("xval/Tibetan.nex",
 
 df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.tibetan,
                          recage.burmish, recage.commonchinese, recage.sinitic, recage.tibetan))
-df$type = rep(c("Constraint", "Reconstructed"), each=4)
+df$Type = rep(c("known", "inferred"), each=4)
 df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
 
-ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
-  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), size=1) +
-  ylab("Years BP") +
+fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
+  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
+  ylab("years BP") +
+  xlab("node") +
   scale_color_few() +
-  # coord_equal() +
+  # ylim(c(0,3000)) +
+  scale_y_reverse(limits = c(3000, 0)) +
+  scale_x_discrete(expand = expansion(add = c(0.25, 1.25))) +
   theme_minimal() +
-  theme(legend.position = "top", aspect.ratio = .6)
-  # theme(legend.position = c(1,.5), legend.justification = c(1,.5))
+  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
 
+fig_xages <- df |> 
+  mutate(clade = str_replace(clade, " ", "\n")) |> 
+  ggplot(aes(y=clade, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
+  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
+  xlab("years BP") +
+  ylab(NULL) +
+  scale_color_few(name = NULL) +
+  scale_x_reverse(limits = c(3000, 0)) +
+  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25))) +
+  theme_minimal() +
+  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
+
+pdf("fig_xages.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+fig_xages
+dev.off()
+embedFonts("fig_xages.pdf")
+plot_crop("fig_xages.pdf")
