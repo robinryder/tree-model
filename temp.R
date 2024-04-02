@@ -1,3 +1,5 @@
+# Settings ----------------------------------------------------------------
+
 library(ape)
 library(phangorn)
 library(phytools)
@@ -5,19 +7,28 @@ library(tidyverse)
 library(ggtree)
 library(ggthemes)
 library(knitr)
+library(ggridges)
+library(HDInterval)
 
 wd <- 5
 base_font <- "URW Palladio L"
 base_font_size <- 10
 theme_set(
   theme_minimal(base_family = base_font, base_size = base_font_size) +
-    theme(text = element_text(family = base_font, size = base_font_size))
+    theme(
+      text = element_text(family = base_font, size = base_font_size),
+      axis.text.y.left = element_text(size = base_font_size),
+      axis.title = element_text(size = base_font_size)
+    )
 )
 update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
 
 
+
 st_tree <- read.nexus("SinoTibetanSubset.nex")
 
+
+# Consensus tree ----------------------------------------------------------
 
 st_tree_cs <- consensus(st_tree, p = .5, rooted = TRUE)
 st_tree_cs <- consensus.edges(st_tree, consensus.tree = st_tree_cs, rooted = TRUE, method = "mean.edge", if.absent = "ignore")
@@ -38,6 +49,9 @@ ggsave("st_tree_cs.pdf", width = wd, height = wd, units = "in", device = cairo_p
 plot_crop("st_tree_cs.pdf")
 
 
+
+# MCC tree ----------------------------------------------------------------
+
 st_tree_mcc <- maxCladeCred(st_tree)
 st_tree_mcc |>
   fortify() |>
@@ -52,21 +66,184 @@ st_tree_mcc |>
 ggsave("st_tree_mcc.pdf", width = wd, height = wd, units = "in", device = cairo_pdf)
 plot_crop("st_tree_mcc.pdf")
 
-st_tree_ds <- st_tree[1:1000] |>
-  ggdensitree(alpha = .005) +
-  geom_tiplab(aes(label = str_replace_all(label, "_", " ")), family = base_font, size = base_font_size / .pt) +
-  theme_tree2() +
-  theme(plot.margin = margin(t = 0, r = 6.5, b = 0, l = 0, unit = "char")) +
-  coord_cartesian(clip = "off")
-ggsave("st_tree_ds.pdf", st_tree_ds, width = wd, height = wd, units = "in", device = cairo_pdf)
-plot_crop("st_tree_ds.pdf")
 
-st_tree_scaled <- lapply(st_tree, function(x) {x$edge.length <- x$edge.length * 1000; return(x)})
+
+# Densitree ---------------------------------------------------------------
+
+
+# st_tree_ds <- st_tree[1:1000] |>
+#   ggdensitree(alpha = .005) +
+#   geom_tiplab(aes(label = str_replace_all(label, "_", " ")), family = base_font, size = base_font_size / .pt) +
+#   theme_tree2() +
+#   theme(plot.margin = margin(t = 0, r = 6.5, b = 0, l = 0, unit = "char")) +
+#   coord_cartesian(clip = "off")
+# ggsave("st_tree_ds.pdf", st_tree_ds, width = wd, height = wd, units = "in", device = cairo_pdf)
+# plot_crop("st_tree_ds.pdf")
+
+st_tree_scaled <- lapply(st_tree, function(x) {
+  x$edge.length <- x$edge.length * 1000
+  return(x)
+})
 class(st_tree_scaled) <- "multiPhylo"
 pdf("st_tree_ds.pdf", pointsize = 10, width = wd, height = wd * 1.25, family = "URWPalladio")
-par(mar = c(2, 0, 0, .6), oma = c(0, 0, 0, 0), xpd=TRUE)
+par(mar = c(2, 0, 0, .6), oma = c(0, 0, 0, 0), xpd = TRUE)
 densiTree(st_tree_scaled, consensus = ladderize(st_tree_cs, right = FALSE), alpha = .005, font = 1, label.offset = .01, cex = 1, scale.bar = TRUE)
 title(xlab = "years BP")
 dev.off()
 embedFonts("st_tree_ds.pdf")
 knitr::plot_crop("st_tree_ds.pdf")
+
+
+# Outgroup ----------------------------------------------------------------
+
+find.outgroup <- function(tree) {
+  nl <- length(tree$tip.label)
+  r <- getRoot(tree)
+  cr <- tree$edge[tree$edge[, 1] == r, 2]
+  s1 <- getDescendants(tree, cr[1])
+  s2 <- getDescendants(tree, cr[2])
+  s1 <- s1[s1 <= nl]
+  s2 <- s2[s2 <= nl]
+  # Ensure that s1 is the smallest
+  if (length(s1) > length(s2)) s1 <- s2
+  return(paste(sort(tree$tip.label[s1]), collapse = " "))
+}
+
+outgroup <- sapply(st_tree, find.outgroup)
+
+st_tree |>
+  map(function(x) {
+    nl <- length(x$tip.label)
+    x$tip.label
+    # r <- getRoot(x)
+    # cr <- x$edge[x$edge[, 1] == r, 2]
+    # s1 <- getDescendants(x, cr[1])
+    # s2 <- getDescendants(x, cr[2])
+    # s1 <- s1[s1 <= nl]
+    # s2 <- s2[s2 <= nl]
+    # if (length(s1) > length(s2)) s1 <- s2
+    # sort(x$tip.label[s1])
+  })
+
+
+sapply(st_tree, function(x) {
+  tibble(age = max(node.depth.edgelength(x)), outgroup = find.outgroup(x))
+})
+
+ages_outgroup <- st_tree |>
+  seq_along() |>
+  map_df(~
+    tibble(
+      age = max(node.depth.edgelength(st_tree[[.x]])),
+      outgroup = find.outgroup(st_tree[[.x]])
+    )) |>
+  mutate(outgroup = case_when(
+    outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese" ~ "Chinese",
+    outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese" ~ "Chinese-Sal",
+    outgroup == "Bokar_Tani Yidu" ~ "Tani-Yidu",
+    .default = "x"
+  )) %>%
+  bind_rows(mutate(., outgroup = "any")) |>
+  filter(outgroup != "x")
+
+ages_outgroup %>%
+  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "any"))) %>%
+  ggplot(aes(x = age * 1000, y = outgroup, fill = outgroup, height = after_stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
+  xlab("years BP") +
+  ylab("first branch")
+ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .6, units = "in", device = cairo_pdf)
+plot_crop("fig_ageoutgroup.pdf")
+
+
+# Age and monophyly -------------------------------------------------------
+
+getMRCA_age <- function(tree, tips) {
+  tips <- if (is.character(tips)) which(tree$tip.label %in% tips) else tips
+  mrca <- ifelse(length(tips) > 1, getMRCA(tree, tips), tips)
+  root_age <- max(node.depth.edgelength(tree))
+  root_age - node.depth.edgelength(tree)[mrca]
+}
+
+tips <- st_tree[[1]]$tip.label |>
+  str_subset("Jingpho|Rabha|Chinese")
+sinitic_sal <- st_tree |>
+  seq_along() |>
+  map_df(~
+    tibble(
+      age = getMRCA_age(st_tree[[.x]], tips),
+      monophyletic = ifelse(is.monophyletic(st_tree[[.x]], tips), "monophyletic", "paraphyletic")
+    )) %>%
+  bind_rows(mutate(., monophyletic = "any"))
+
+sinitic_sal |>
+  ggplot(aes(x = age * 1000, y = fct_rev(monophyletic), fill = monophyletic, height = after_stat(density))) +
+  stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
+  geom_density_ridges(fill = NA, color = "gray40") +
+  scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
+  scale_x_reverse(limits = c(15000, 0)) +
+  scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
+  xlab("years BP") +
+  ylab("status of Sinitic-Sal")
+ggsave("fig_agemono.pdf", width = wd, height = wd * .6, units = "in", device = cairo_pdf)
+plot_crop("fig_agemono.pdf")
+
+
+known <- tribble(
+  ~language, ~lower, ~upper,
+  "Old Tibetan", 1000, 1200,
+  "Old Burmese", 700, 900,
+  "Common Chinese", 2000, 2200,
+  "Old Chinese", 2400, 2600
+) |>
+  mutate(type = "known")
+
+oldburmese_trees <- read.nexus("xval/Burmese.nex")
+commonchinese_trees <- read.nexus("xval/CommonChinese.nex")
+oldchinese_trees <- read.nexus("xval/Chinese.nex")
+oldtibetan_trees <- read.nexus("xval/Tibetan.nex")
+
+
+getMRCA_ages <- function(trees, tips, burnin = 0, label = NULL) {
+  if (is.null(label)) label <- tips
+  trees <- trees[round(length(trees) * burnin):length(trees)]
+  seq_along(trees) |>
+    map_dbl(~ getMRCA_age(trees[[.x]], tips)) |>
+    hdi() |>
+    rbind() |>
+    as_tibble() |>
+    mutate(language = label, type = "inferred")
+}
+
+bind_rows(
+  known,
+  getMRCA_ages(oldchinese_trees, "SiniticOldChinese", .2, "Old Chinese"),
+  getMRCA_ages(oldtibetan_trees, "TibetanOldTibetan", .2, "Old Tibetan"),
+  getMRCA_ages(oldburmese_trees, "BurmishOldBurmese", .2, "Old Burmese"),
+  getMRCA_ages(commonchinese_trees, commonchinese_trees[[1]]$tip.label |> str_subset("Sinitic[^O]"), .2, "Common Chinese")
+) |> 
+  mutate(language = str_replace(language, " ", "\n")) |> 
+  ggplot(aes(y=language, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
+  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), linewidth=2) +
+  xlab("years BP") +
+  ylab(NULL) +
+  scale_color_few(name = NULL) +
+  scale_x_reverse(limits = c(3000, 0)) +
+  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25)))
+
+
+
+# st_tree |>
+#   seq_along() |>
+#   map_lgl(~ is.monophyletic(st_tree[[.x]], tips = c("Chepang", "Hayu", "Thulung", "Bokar_Tani", "Yidu", "Tshangla"))) |>
+#   mean()
+#
+# st_tree |>
+#   map(~map(.x, print))
+#
+# sapply(tt, is.monophyletic, tips = c("Chepang", "Hayu", "Thulung", "Bokar_Tani", "Yidu", "Tshangla")) |>
+#   mean()
