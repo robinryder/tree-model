@@ -16,9 +16,11 @@ base_font_size <- 10
 theme_set(
   theme_minimal(base_family = base_font, base_size = base_font_size) +
     theme(
-      text = element_text(family = base_font, size = base_font_size),
-      axis.text.y.left = element_text(size = base_font_size),
-      axis.title = element_text(size = base_font_size)
+      text = element_text(family = base_font, size = base_font_size, color = "black"),
+      axis.text = element_text(size = base_font_size, color = "black"),
+      axis.title = element_text(size = base_font_size, color = "black"),
+      legend.text = element_text(size = base_font_size, color = "black"),
+      plot.margin = margin(0, 0, 0, 3)
     )
 )
 update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
@@ -155,8 +157,9 @@ ages_outgroup %>%
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
   xlab("years BP") +
-  ylab("first branch")
-ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .6, units = "in", device = cairo_pdf)
+  ylab("first branch") +
+  theme(aspect.ratio = 0.618)
+ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
 plot_crop("fig_ageoutgroup.pdf")
 
 
@@ -178,7 +181,7 @@ sinitic_sal <- st_tree |>
       age = getMRCA_age(st_tree[[.x]], tips),
       monophyletic = ifelse(is.monophyletic(st_tree[[.x]], tips), "monophyletic", "paraphyletic")
     )) %>%
-  bind_rows(mutate(., monophyletic = "any"))
+  bind_rows(mutate(., monophyletic = "either"))
 
 sinitic_sal |>
   ggplot(aes(x = age * 1000, y = fct_rev(monophyletic), fill = monophyletic, height = after_stat(density))) +
@@ -188,8 +191,9 @@ sinitic_sal |>
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
   xlab("years BP") +
-  ylab("status of Sinitic-Sal")
-ggsave("fig_agemono.pdf", width = wd, height = wd * .6, units = "in", device = cairo_pdf)
+  ylab("status of Common Chinese-Sal") +
+  theme(aspect.ratio = 0.618)
+ggsave("fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
 plot_crop("fig_agemono.pdf")
 
 
@@ -228,13 +232,15 @@ bind_rows(
 ) |> 
   mutate(language = str_replace(language, " ", "\n")) |> 
   ggplot(aes(y=language, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
-  geom_linerange(aes(color=type), position=position_dodge(width=c(0.2)), linewidth=2) +
+  geom_linerange(aes(color=fct_rev(type)), position=position_dodge2(reverse = TRUE, width=c(.35)), linewidth=4) +
   xlab("years BP") +
   ylab(NULL) +
   scale_color_few(name = NULL) +
   scale_x_reverse(limits = c(3000, 0)) +
-  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25)))
-
+  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25)))  +
+  theme(aspect.ratio = 0.618, legend.position = "top")
+ggsave("fig_xages.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("fig_xages.pdf")
 
 
 # st_tree |>

@@ -35,12 +35,14 @@ plot_crop("fig_consensus.pdf")
 
 # MCC tree --------------------------------------------------------------------------------------------------------
 
-mcct <- maxCladeCred(tt)
+mcct <- ladderize(maxCladeCred(tt))
 mcct$node.label <- round(mcct$node.label * 100, 0)
 mcct$root.edge <- .15
 pdf("fig_mcc.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
 plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, mcct$node.label[-1]), frame="none", adj = c(-.15,.75), cex = .8)
+# nodelabels(c(NA, mcct$node.label[2], NA, ), frame="none", adj = c(1.15,1.25))
+nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame="none", adj = c(1.15,1.25))
+nodelabels(mcct$node.label[3], frame="none", adj = c(1.15,1.25))
 dev.off()
 embedFonts("fig_mcc.pdf")
 plot_crop("fig_mcc.pdf")
