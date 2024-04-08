@@ -167,7 +167,11 @@ find.outgroup <- function(tree) {
 }
 
 outgroup <- sapply(st_tree, find.outgroup)
-
+outgroup_tb <- table(outgroup) |> 
+  prop.table() |> 
+  as_tibble() |> 
+  arrange(-n) |> 
+  rename(p = n)
 st_tree |>
   map(function(x) {
     nl <- length(x$tip.label)
@@ -194,18 +198,20 @@ ages_outgroup <- st_tree |>
       age = max(node.depth.edgelength(st_tree[[.x]])),
       outgroup = find.outgroup(st_tree[[.x]])
     )) |>
+  left_join(outgroup_tb) |> 
   mutate(outgroup = case_when(
     outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese" ~ "Chinese",
     outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese" ~ "Chinese-Sal",
     outgroup == "Bokar_Tani Yidu" ~ "Tani-Yidu",
     .default = "x"
-  )) %>%
-  bind_rows(mutate(., outgroup = "any")) |>
-  filter(outgroup != "x")
+  )) |> 
+  mutate(label = paste0(outgroup, "\n(", round(p,2) * 100, "%)")) %>%
+  bind_rows(mutate(., outgroup = "any", label = "any")) |>
+  filter(!str_detect(outgroup, "x"))
 
 ages_outgroup %>%
-  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "any"))) %>%
-  ggplot(aes(x = age * 1000, y = outgroup, fill = outgroup, height = after_stat(density))) +
+  # mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "any"))) %>%
+  ggplot(aes(x = age * 1000, y = fct_rev(label), fill = fct_rev(label), height = after_stat(density))) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
   scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
@@ -237,6 +243,10 @@ sinitic_sal <- st_tree |>
       monophyletic = ifelse(is.monophyletic(st_tree[[.x]], tips), "monophyletic", "paraphyletic")
     )) %>%
   bind_rows(mutate(., monophyletic = "either"))
+
+sinitic_sal |> 
+  count(monophyletic) |> 
+  mutate(p = n/2000)
 
 sinitic_sal |>
   ggplot(aes(x = age * 1000, y = fct_rev(monophyletic), fill = monophyletic, height = after_stat(density))) +
