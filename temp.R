@@ -242,7 +242,7 @@ sinitic_sal <- st_tree |>
       age = getMRCA_age(st_tree[[.x]], tips),
       monophyletic = ifelse(is.monophyletic(st_tree[[.x]], tips), "monophyletic", "paraphyletic")
     )) %>%
-  bind_rows(mutate(., monophyletic = "either"))
+  bind_rows(mutate(., monophyletic = "any"))
 
 sinitic_sal |> 
   count(monophyletic) |> 
@@ -256,7 +256,7 @@ sinitic_sal |>
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
   xlab("years BP") +
-  ylab("status of Common Chinese-Sal") +
+  ylab("phyletic status of Chinese-Sal") +
   theme(aspect.ratio = 0.618)
 ggsave("fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
 plot_crop("fig_agemono.pdf")
