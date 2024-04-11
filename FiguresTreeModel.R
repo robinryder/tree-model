@@ -220,14 +220,14 @@ library(HDInterval)
 true.tibetan = c(1000, 1200)
 true.burmish = c(700, 900)
 true.commonchinese = c(2000, 2200)
-true.sinitic = c(2400, 2600)
+true.sinitic = c(2300, 2800)
 
 reconstructed.age = function(file, lang){
   t = read.nexus(file)
   
   #remove 20% for burn-in
   nt = length(t)
-  t = t[(nt/2) : nt]
+  t = t[(nt * .2) : nt]
   
   age = rep(NA, length(t))
   for(i in 1:length(t)){
