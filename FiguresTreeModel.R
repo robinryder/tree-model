@@ -142,26 +142,15 @@ knitr::plot_crop("fig_ageoutgroup.pdf")
 
 ###### MRCA ages
 
-mrca.age <- function(tree, tips) {
-  max(dist.nodes(tree)[tips, tips]) / 2
-}
-
-mrca.age.names <- function(tree, tipnames) {
-  max(cophenetic(tree)[tipnames, tipnames]) / 2
+mrca.age = function(tree, tips) {
+  tips <- if (is.character(tips)) which(tree$tip.label %in% tips) else tips
+  mrca <- ifelse(length(tips) > 1, getMRCA(tree, tips), tips)
+  root_age <- max(node.depth.edgelength(tree))
+  root_age - node.depth.edgelength(tree)[mrca]
 }
 
 mrca.summary <- function(d, l) {
-  nt <- length(d)
-  res <- rep(NA, nt)
-  for (i in 1:nt) {
-    if (is.numeric(l)) {
-      res[i] <- mrca.age(d[[i]], l)
-    } else {
-      res[i] <- mrca.age.names(d[[i]], l)
-    }
-  }
-
-  return(res)
+  sapply(d, mrca.age, tips=l)
 }
 
 # Plot of MRCA age for the following languages: Jingpho, Rabha, 4 Chinese dialects
