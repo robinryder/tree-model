@@ -186,15 +186,6 @@ fig_agemono <- df %>%
   ylab(NULL) +
   theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
 
-# df %>% 
-#   mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
-#   bind_rows(mutate(df, group = "all")) %>%
-#   ggplot(aes(x = age*1000, fill = group, group = group)) +
-#   geom_density(alpha = .5) +
-#   scale_fill_few(guide = "none") +
-#   xlim(0, 15000) +
-#   theme_minimal() +
-#   xlab("time (years BP)")
 
 pdf("fig_agemono.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
 fig_agemono
