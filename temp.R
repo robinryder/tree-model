@@ -26,7 +26,6 @@ theme_set(
 update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
 
 
-
 st_tree <- read.nexus("SinoTibetanSubset.nex")
 
 
@@ -217,7 +216,7 @@ ages_outgroup %>%
   scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
-  xlab("years BP") +
+  xlab("root age (years BP)") +
   ylab("first branch") +
   theme(aspect.ratio = 0.618)
 ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
@@ -242,7 +241,7 @@ sinitic_sal <- st_tree |>
       age = getMRCA_age(st_tree[[.x]], tips),
       monophyletic = ifelse(is.monophyletic(st_tree[[.x]], tips), "monophyletic", "paraphyletic")
     )) %>%
-  bind_rows(mutate(., monophyletic = "any"))
+  bind_rows(mutate(., monophyletic = "either"))
 
 sinitic_sal |> 
   count(monophyletic) |> 
@@ -255,8 +254,8 @@ sinitic_sal |>
   scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
-  xlab("years BP") +
-  ylab("phyletic status of Chinese-Sal") +
+  xlab("root age (years BP)") +
+  ylab("status of Chinese-Sal") +
   theme(aspect.ratio = 0.618)
 ggsave("fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
 plot_crop("fig_agemono.pdf")
