@@ -228,80 +228,80 @@ ggsave("figures/fig_xages.pdf", width = wd, height = wd * .8, units = "in", devi
 plot_crop("figures/fig_xages.pdf")
 
 
-
-
-true.tibetan = c(1000, 1200)
-true.burmish = c(700, 900)
-true.commonchinese = c(2000, 2200)
-true.sinitic = c(2300, 2800)
-
-reconstructed.age = function(file, lang){
-  t = read.nexus(file)
-  
-  #remove 20% for burn-in
-  nt = length(t)
-  t = t[(nt * .2) : nt]
-  
-  age = rep(NA, length(t))
-  for(i in 1:length(t)){
-    tt = t[[i]]
-    
-    if(length(lang) == 1){
-      idx = which(tt$tip.label == lang)
-    } else {
-      idx = getMRCA(tt, lang)
-    }
-    
-    depths = node.depth.edgelength(tt)
-    age[i] = max(depths) - depths[idx]
-  }
-  return(hdi(age))
-}
-
-
-recage.burmish = reconstructed.age("xval/Burmese.nex", 
-                                   c("BurmishOldBurmese", "BurmishRangoon"))
-
-recage.commonchinese = reconstructed.age("xval/CommonChinese.nex", 
-                                         c("SiniticBeijing", "SiniticGuangzhou", 
-                                           "SiniticXingning", "SiniticLonggang",
-                                           "SiniticJieyang", "SiniticChaozhou" ))
-recage.sinitic = reconstructed.age("xval/Chinese.nex", 
-                                   c("SiniticOldChinese" ))
-recage.tibetan = reconstructed.age("xval/Tibetan.nex", 
-                                   c("TibetanOldTibetan"))
-
-
-df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.tibetan,
-                         recage.burmish, recage.commonchinese, recage.sinitic, recage.tibetan))
-df$Type = rep(c("known", "inferred"), each=4)
-df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
-
-fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
-  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
-  ylab("years BP") +
-  xlab("node") +
-  scale_color_few() +
-  # ylim(c(0,3000)) +
-  scale_y_reverse(limits = c(3000, 0)) +
-  scale_x_discrete(expand = expansion(add = c(0.25, 1.25))) +
-  theme_minimal() +
-  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
-
-fig_xages <- df |> 
-  mutate(clade = str_replace(clade, " ", "\n")) |> 
-  ggplot(aes(y=clade, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
-  geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
-  xlab("years BP") +
-  ylab(NULL) +
-  scale_color_few(name = NULL) +
-  scale_x_reverse(limits = c(3000, 0)) +
-  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25))) +
-  theme_minimal() +
-  theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
-
-pdf("fig_xages.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
-fig_xages
-dev.off()
-embedFonts("fig_xages.pdf")
-plot_crop("fig_xages.pdf")
+# 
+# 
+# true.tibetan = c(1000, 1200)
+# true.burmish = c(700, 900)
+# true.commonchinese = c(2000, 2200)
+# true.sinitic = c(2300, 2800)
+# 
+# reconstructed.age = function(file, lang){
+#   t = read.nexus(file)
+#   
+#   #remove 20% for burn-in
+#   nt = length(t)
+#   t = t[(nt * .2) : nt]
+#   
+#   age = rep(NA, length(t))
+#   for(i in 1:length(t)){
+#     tt = t[[i]]
+#     
+#     if(length(lang) == 1){
+#       idx = which(tt$tip.label == lang)
+#     } else {
+#       idx = getMRCA(tt, lang)
+#     }
+#     
+#     depths = node.depth.edgelength(tt)
+#     age[i] = max(depths) - depths[idx]
+#   }
+#   return(hdi(age))
+# }
+# 
+# 
+# recage.burmish = reconstructed.age("xval/Burmese.nex", 
+#                                    c("BurmishOldBurmese", "BurmishRangoon"))
+# 
+# recage.commonchinese = reconstructed.age("xval/CommonChinese.nex", 
+#                                          c("SiniticBeijing", "SiniticGuangzhou", 
+#                                            "SiniticXingning", "SiniticLonggang",
+#                                            "SiniticJieyang", "SiniticChaozhou" ))
+# recage.sinitic = reconstructed.age("xval/Chinese.nex", 
+#                                    c("SiniticOldChinese" ))
+# recage.tibetan = reconstructed.age("xval/Tibetan.nex", 
+#                                    c("TibetanOldTibetan"))
+# 
+# 
+# df = as.data.frame(rbind(true.burmish, true.commonchinese, true.sinitic, true.tibetan,
+#                          recage.burmish, recage.commonchinese, recage.sinitic, recage.tibetan))
+# df$Type = rep(c("known", "inferred"), each=4)
+# df$clade = rep(c("Burmish", "Common Chinese", "Sinitic", "Tibetan"), 2)
+# 
+# fig_xages <- ggplot(df, aes(x=clade, y=(lower+upper)/2, ymin=lower, ymax=upper)) +
+#   geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
+#   ylab("years BP") +
+#   xlab("node") +
+#   scale_color_few() +
+#   # ylim(c(0,3000)) +
+#   scale_y_reverse(limits = c(3000, 0)) +
+#   scale_x_discrete(expand = expansion(add = c(0.25, 1.25))) +
+#   theme_minimal() +
+#   theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
+# 
+# fig_xages <- df |> 
+#   mutate(clade = str_replace(clade, " ", "\n")) |> 
+#   ggplot(aes(y=clade, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
+#   geom_linerange(aes(color=Type), position=position_dodge(width=c(0.2)), linewidth=2) +
+#   xlab("years BP") +
+#   ylab(NULL) +
+#   scale_color_few(name = NULL) +
+#   scale_x_reverse(limits = c(3000, 0)) +
+#   scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25))) +
+#   theme_minimal() +
+#   theme(legend.position = "top", axis.text.y.left = element_text(size = 10), axis.title = element_text(size = 9))
+# 
+# pdf("fig_xages.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
+# fig_xages
+# dev.off()
+# embedFonts("fig_xages.pdf")
+# plot_crop("fig_xages.pdf")
