@@ -58,8 +58,8 @@ ct <- consensus.edges(tt, consensus.tree = cons, rooted = TRUE)
 ct$root.edge <- .15
 
 pdf("fig_consensus.pdf", pointsize = 10, width = 6.3, height = 4, family = "URWPalladio")
-plot(ct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .9)
+plot(ct, show.node.label = FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(c(NA, ct$node.label[-1]), frame = "none", adj = c(1.15, 1.25), cex = .9)
 dev.off()
 embedFonts("fig_consensus.pdf")
 plot_crop("fig_consensus.pdf")
@@ -83,17 +83,17 @@ plot_crop("st_tree_mcc.pdf")
 library(treeio)
 # mcct <- read.nexus("mcc_ta.tree") |> ladderize()
 mcct_b <- read.beast("mcc_ta.tree")
-pst <- tibble(posterior = mcct_b@data$posterior, node = as.integer(mcct_b@data$node)) |> 
+pst <- tibble(posterior = mcct_b@data$posterior, node = as.integer(mcct_b@data$node)) |>
   filter(!is.na(posterior)) |>
-  arrange(node) |> 
+  arrange(node) |>
   pull(posterior)
-mcct_b@phylo$node.labels <- round(pst,2) * 100
+mcct_b@phylo$node.labels <- round(pst, 2) * 100
 mcct <- ladderize(mcct_b@phylo)
 mcct$root.edge <- .15
-pdf("fig_mcc.pdf", pointsize=10, width = 6.2, height = 4, family = "URWPalladio")
-plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, mcct$node.labels[2:12], NA, mcct$node.labels[14:length(mcct$node.labels)]), frame="none", adj = c(1.15,1.25), cex = .9)
-nodelabels(c(rep(NA, 12), mcct$node.label[13], rep(NA, length(mcct$node.label) - 13)), frame="none", adj = c(1.15,-.25), cex = .9)
+pdf("fig_mcc.pdf", pointsize = 10, width = 6.2, height = 4, family = "URWPalladio")
+plot(mcct, show.node.label = FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(c(NA, mcct$node.labels[2:12], NA, mcct$node.labels[14:length(mcct$node.labels)]), frame = "none", adj = c(1.15, 1.25), cex = .9)
+nodelabels(c(rep(NA, 12), mcct$node.label[13], rep(NA, length(mcct$node.label) - 13)), frame = "none", adj = c(1.15, -.25), cex = .9)
 dev.off()
 embedFonts("fig_mcc.pdf")
 plot_crop("fig_mcc.pdf")
@@ -101,10 +101,10 @@ plot_crop("fig_mcc.pdf")
 # mcct <- ladderize(maxCladeCred(tt))
 mcct$node.label <- round(mcct$node.label * 100, 0)
 mcct$root.edge <- .15
-pdf("fig_mcc.pdf", pointsize=10, width = 6.3, height = 4, family = "URWPalladio")
-plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame="none", adj = c(1.15,1.25))
-nodelabels(c(NA, NA, mcct$node.label[3], rep(NA, length(mcct$node.label) - 3)), frame="none", adj = c(1.15,-.25))
+pdf("fig_mcc.pdf", pointsize = 10, width = 6.3, height = 4, family = "URWPalladio")
+plot(mcct, show.node.label = FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame = "none", adj = c(1.15, 1.25), cex = .9)
+nodelabels(c(NA, NA, mcct$node.label[3], rep(NA, length(mcct$node.label) - 3)), frame = "none", adj = c(1.15, -.25), cex = .9)
 dev.off()
 embedFonts("fig_mcc.pdf")
 plot_crop("fig_mcc.pdf")
@@ -132,20 +132,25 @@ densiTree(st_tree_scaled, consensus = ladderize(st_tree_cs, right = FALSE), alph
 title(xlab = "years BP")
 dev.off()
 embedFonts("st_tree_ds.pdf")
-knitr::plot_crop("st_tree_ds.pdf")
+plot_crop("st_tree_ds.pdf")
 
 
-tt_scaled <- lapply(tt, function(x) {x$edge.length <- x$edge.length * 1000; return(x)})
+tt_scaled <- lapply(tt, function(x) {
+  x$edge.length <- x$edge.length * 1000
+  return(x)
+})
 class(tt_scaled) <- "multiPhylo"
 maxBT <- max(phangorn:::getAges(tt_scaled))
 label <- rev(pretty(c(maxBT, 0)))
 maxBT <- max(label)
-pdf("fig_densitree.pdf", pointsize=10, width = 5.025, height = 6, family = "URWPalladio")
-par(mar = c(2, 0, 0, .6), #oma = c(0, 0, 0, 0), 
-    xpd = TRUE)
-densiTree(tt_scaled, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=1, scale.bar = FALSE)
-axis(side = 1, at = seq(0, 1.0, length.out = length(label)), labels = label, line=-1.5, cex=.9)
-title(xlab="years BP", line = 1)
+pdf("fig_densitree.pdf", pointsize = 10, width = 5.025, height = 6, family = "URWPalladio")
+par(
+  mar = c(2, 0, 0, .6), # oma = c(0, 0, 0, 0),
+  xpd = TRUE
+)
+densiTree(tt_scaled, consensus = cons, alpha = .005, font = 1, label.offset = .01, cex = 1, scale.bar = FALSE)
+axis(side = 1, at = seq(0, 1.0, length.out = length(label)), labels = label, line = -1.5, cex = .9)
+title(xlab = "years BP", line = 1)
 dev.off()
 embedFonts("fig_densitree.pdf")
 plot_crop("fig_densitree.pdf")
@@ -166,10 +171,10 @@ find.outgroup <- function(tree) {
 }
 
 outgroup <- sapply(st_tree, find.outgroup)
-outgroup_tb <- table(outgroup) |> 
-  prop.table() |> 
-  as_tibble() |> 
-  arrange(-n) |> 
+outgroup_tb <- table(outgroup) |>
+  prop.table() |>
+  as_tibble() |>
+  arrange(-n) |>
   rename(p = n)
 st_tree |>
   map(function(x) {
@@ -197,14 +202,14 @@ ages_outgroup <- st_tree |>
       age = max(node.depth.edgelength(st_tree[[.x]])),
       outgroup = find.outgroup(st_tree[[.x]])
     )) |>
-  left_join(outgroup_tb) |> 
+  left_join(outgroup_tb) |>
   mutate(outgroup = case_when(
     outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese" ~ "Chinese",
     outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese" ~ "Chinese-Sal",
     outgroup == "Bokar_Tani Yidu" ~ "Tani-Yidu",
     .default = "x"
-  )) |> 
-  mutate(label = paste0(outgroup, "\n(", round(p,2) * 100, "%)")) %>%
+  )) |>
+  mutate(label = paste0(outgroup, "\n(", round(p, 2) * 100, "%)")) %>%
   bind_rows(mutate(., outgroup = "any", label = "any")) |>
   filter(!str_detect(outgroup, "x"))
 
@@ -243,9 +248,9 @@ sinitic_sal <- st_tree |>
     )) %>%
   bind_rows(mutate(., monophyletic = "either"))
 
-sinitic_sal |> 
-  count(monophyletic) |> 
-  mutate(p = n/2000)
+sinitic_sal |>
+  count(monophyletic) |>
+  mutate(p = n / 2000)
 
 sinitic_sal |>
   ggplot(aes(x = age * 1000, y = fct_rev(monophyletic), fill = monophyletic, height = after_stat(density))) +
@@ -293,15 +298,15 @@ bind_rows(
   getMRCA_ages(oldtibetan_trees, "TibetanOldTibetan", .2, "Old Tibetan"),
   getMRCA_ages(oldburmese_trees, "BurmishOldBurmese", .2, "Old Burmese"),
   getMRCA_ages(commonchinese_trees, commonchinese_trees[[1]]$tip.label |> str_subset("Sinitic[^O]"), .2, "Common Chinese")
-) |> 
-  mutate(language = str_replace(language, " ", "\n")) |> 
-  ggplot(aes(y=language, x=(lower+upper)/2, xmin=lower, xmax=upper)) +
-  geom_linerange(aes(color=fct_rev(type)), position=position_dodge2(reverse = TRUE, width=c(.35)), linewidth=4) +
+) |>
+  mutate(language = str_replace(language, " ", "\n")) |>
+  ggplot(aes(y = language, x = (lower + upper) / 2, xmin = lower, xmax = upper)) +
+  geom_linerange(aes(color = fct_rev(type)), position = position_dodge2(reverse = TRUE, width = c(.35)), linewidth = 4) +
   xlab("years BP") +
   ylab(NULL) +
   scale_color_few(name = NULL) +
   scale_x_reverse(limits = c(3000, 0)) +
-  scale_y_discrete(limits=rev, expand = expansion(add = c(0.25, .25)))  +
+  scale_y_discrete(limits = rev, expand = expansion(add = c(0.25, .25))) +
   theme(aspect.ratio = 0.618, legend.position = "top")
 ggsave("fig_xages.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
 plot_crop("fig_xages.pdf")
@@ -325,27 +330,25 @@ mcc_ta <- read.nexus("mcc_ta.tree") |> ladderize()
 mcc_ta_median <- read.nexus("mcc_ta_median.tree") |> ladderize()
 mcc_ta_mean <- read.nexus("mcc_ta_median.tree") |> ladderize()
 
-theme_set(theme_tree2() + theme(plot.margin = margin(t = 0, r = 8, b = 0, l = 0, unit = "char"))
-)
+theme_set(theme_tree2() + theme(plot.margin = margin(t = 0, r = 8, b = 0, l = 0, unit = "char")))
 ph <- ggtree(mcc_ph, ladderize = TRUE) + geom_tiplab() + ggtitle("phangorn\n") + theme_tree2() + coord_fixed(clip = "off")
 tatg <- ggtree(mcc_ta_target, ladderize = TRUE) + geom_tiplab() + ggtitle("TreeAnnotator\ntarget heights") + theme_tree2() + coord_fixed(clip = "off")
 tach <- ggtree(mcc_ta, ladderize = TRUE) + geom_tiplab() + ggtitle("TreeAnnotator\ncommon ancestors heights") + theme_tree2() + coord_fixed(clip = "off")
 tamd <- ggtree(mcc_ta_median, ladderize = TRUE) + geom_tiplab() + ggtitle("TreeAnnotator\nmedian heights") + theme_tree2() + coord_fixed(clip = "off")
-tame <- ggtree(mcc_ta_mean, ladderize = TRUE) + geom_tiplab() + ggtitle("TreeAnnotator\nmean heights")  + theme_tree2() + coord_fixed(clip = "off")
+tame <- ggtree(mcc_ta_mean, ladderize = TRUE) + geom_tiplab() + ggtitle("TreeAnnotator\nmean heights") + theme_tree2() + coord_fixed(clip = "off")
 
 cowplot::plot_grid(revts(ph), revts(tamd), revts(tame), revts(tatg), revts(tach))
 
 
 
-par(mfrow=c(2,2), xpd=FALSE)
+par(mfrow = c(2, 2), xpd = FALSE)
 plot(mcc_ph)
 add.scale.bar()
-legend("bottomright", legend="phangorn", bty="n")
+legend("bottomright", legend = "phangorn", bty = "n")
 plot(mcc_ta)
-legend("bottomright", legend="TreeAnnotator\ncommon ancestors heights", bty="n")
+legend("bottomright", legend = "TreeAnnotator\ncommon ancestors heights", bty = "n")
 plot(mcc_ta_median)
-legend("bottomright", legend="TreeAnnotator\nmedian heights", bty="n")
+legend("bottomright", legend = "TreeAnnotator\nmedian heights", bty = "n")
 plot(mcc_ta_mean)
-legend("bottomright", legend="TreeAnnotator\nmean heights", bty="n")
+legend("bottomright", legend = "TreeAnnotator\nmean heights", bty = "n")
 dev.off()
-

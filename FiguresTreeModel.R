@@ -4,11 +4,27 @@
 library(phytools)
 library(ape)
 library(phangorn)
-library(ggplot2)
-library(cowplot)
-library(ggthemes)
-library(knitr)
 library(tidyverse)
+library(ggthemes)
+library(ggridges)
+library(HDInterval)
+library(knitr)
+
+wd <- 5
+base_font <- "URW Palladio L"
+base_font2 <- "URWPalladio"
+base_font_size <- 10
+theme_set(
+  theme_minimal(base_family = base_font, base_size = base_font_size) +
+    theme(
+      text = element_text(family = base_font, size = base_font_size, color = "black"),
+      axis.text = element_text(size = base_font_size, color = "black"),
+      axis.title = element_text(size = base_font_size, color = "black"),
+      legend.text = element_text(size = base_font_size, color = "black"),
+      plot.margin = margin(0, 0, 0, 3)
+    )
+)
+update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
 
 # Import data -------------------------------------------------------------
 
@@ -22,12 +38,12 @@ cons <- consensus(tt, p = .5, rooted = T)
 cons$node.label <- round(cons$node.label * 100, 0)
 
 # Consensus topology + branch lengths. This might take a couple of minutes
-ct <- consensus.edges(tt, consensus.tree = cons, rooted = T)
+ct <- consensus.edges(tt, consensus.tree = cons, rooted = TRUE)
 ct$root.edge <- .15
 
-pdf("fig_consensus.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
+pdf("fig_consensus.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
 plot(ct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .8)
+nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .9)
 dev.off()
 embedFonts("fig_consensus.pdf")
 plot_crop("fig_consensus.pdf")
@@ -38,23 +54,29 @@ plot_crop("fig_consensus.pdf")
 mcct <- ladderize(maxCladeCred(tt))
 mcct$node.label <- round(mcct$node.label * 100, 0)
 mcct$root.edge <- .15
-pdf("fig_mcc.pdf", pointsize=10, width = 6, height = 4, family = "URWPalladio")
-plot(mcct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
-nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame="none", adj = c(1.15,1.25))
-nodelabels(c(NA, NA, mcct$node.label[3], rep(NA, length(mcct$node.label) - 3)), frame="none", adj = c(1.15,-.25))
+pdf("fig_mcc.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
+plot(mcct, show.node.label = FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
+nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame = "none", adj = c(1.15, 1.25), cex = .9)
+nodelabels(c(NA, NA, mcct$node.label[3], rep(NA, length(mcct$node.label) - 3)), frame = "none", adj = c(1.15, -.25), cex = .9)
 dev.off()
 embedFonts("fig_mcc.pdf")
 plot_crop("fig_mcc.pdf")
 
 # Densitree ---------------------------------------------------------------
+
 tt_scaled <- lapply(tt, function(x) {x$edge.length <- x$edge.length * 1000; return(x)})
 class(tt_scaled) <- "multiPhylo"
-pdf("fig_densitree.pdf", pointsize=10, width = 6.5, height = 7, family = "URWPalladio")
-densiTree(tt_scaled, consensus = cons, alpha=.005, font = 1, label.offset = .01, cex=1, scale.bar = TRUE)
-title(xlab="years BP")
+maxBT <- max(phangorn:::getAges(tt_scaled))
+label <- rev(pretty(c(maxBT, 0)))
+maxBT <- max(label)
+pdf("fig_densitree.pdf", pointsize = 10, width = 5.025, height = 6, family = "URWPalladio")
+par(mar = c(2, 0, 0, .6), xpd = TRUE)
+densiTree(tt_scaled, consensus = cons, alpha = .005, font = 1, label.offset = .01, cex = 1, scale.bar = FALSE)
+axis(side = 1, at = seq(0, 1.0, length.out = length(label)), labels = label, line = -1.5, cex = .9)
+title(xlab = "years BP", line = 1)
 dev.off()
 embedFonts("fig_densitree.pdf")
-knitr::plot_crop("fig_densitree.pdf")
+plot_crop("fig_densitree.pdf")
 
 
 # Root age plot -----------------------------------------------------------
@@ -68,7 +90,8 @@ mean(subtree_support(c("Chepang", "Hayu", "Thulung", "Bokar_Tani", "Yidu", "Tsha
 
 # Creating the plot for the root age depending on the outgroup
 # Lists of outgroups
-find.outgroup <- function(tree, nl = length(tree$tip.label)) {
+find.outgroup <- function(tree) {
+  nl <- length(tree$tip.label)
   r <- getRoot(tree)
   cr <- tree$edge[tree$edge[, 1] == r, 2]
   s1 <- getDescendants(tree, cr[1])
@@ -80,118 +103,78 @@ find.outgroup <- function(tree, nl = length(tree$tip.label)) {
   return(paste(sort(tree$tip.label[s1]), collapse = " "))
 }
 
-outgroup <- sapply(tt, find.outgroup, nl = 22)
-head(sort(table(outgroup), dec = T), 3)
+outgroup <- sapply(tt, find.outgroup)
+outgroup_tb <- table(outgroup) |>
+  prop.table() |>
+  as_tibble() |>
+  arrange(-n) |>
+  rename(p = n)
 
-outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese"] <- "Chinese"
-outgroup[outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese"] <- "Chinese-Sal"
-outgroup[outgroup == "Bokar_Tani Yidu"] <- "Tani-Yidu"
+ages_outgroup <- tt |>
+  seq_along() |>
+  map_df(~
+           tibble(
+             age = max(node.depth.edgelength(tt[[.x]])),
+             outgroup = find.outgroup(tt[[.x]])
+           )) |>
+  left_join(outgroup_tb) |>
+  mutate(outgroup = case_when(
+    outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Xingning_Chinese" ~ "Chinese",
+    outgroup == "Beijing_Chinese Guangzhou_Chinese Jieyang_Chinese Jingpho Rabha Xingning_Chinese" ~ "Chinese-Sal",
+    outgroup == "Bokar_Tani Yidu" ~ "Tani-Yidu",
+    .default = "x"
+  )) |>
+  mutate(label = paste0(outgroup, "\n(", round(p, 2) * 100, "%)")) %>%
+  bind_rows(mutate(., outgroup = "any", label = "any")) |>
+  filter(!str_detect(outgroup, "x"))
 
-root.age <- function(tree) {
-  node.depth.edgelength(tree)[1]
-}
-ra <- sapply(tt, root.age)
-aged <- data.frame(age = ra * 1000, outgroup = outgroup)
-keep <- outgroup %in% c("Chinese", "Tani-Yidu", "Chinese-Sal")
-
-aged2 <- rbind(aged[keep, ], data.frame(age = ra * 1000, outgroup = "all"))
-
-p.age.group <- ggplot(aged[keep, ], aes(x = age)) +
-  xlim(0, 15000) +
-  geom_density(aes(group = outgroup, colour = outgroup, fill = outgroup), alpha = .3) + 
-  scale_fill_few() + scale_color_few() + 
-  theme_minimal() +
-  theme(legend.position = c(1,.5), legend.justification = c(1,.5))
-
-col <- "purple"
-p.age <- ggplot(aged, aes(x = age)) +
-  xlim(0, 15000) +
-  geom_density(fill = col, colour = col, alpha = .3) + 
-  theme_minimal()
-
-plot_grid(p.age, p.age.group, align = "v", axis = "rblt", ncol = 1)
-
-options(scipen = 999)
-pdf("fig_ageboth.pdf", pointsize=10, width = 5, height = 5/1.6*2, family = "URWPalladio")
-plot_grid(p.age, p.age.group, align="v", axis="rblt", ncol=1)
-dev.off()
-embedFonts("fig_ageboth.pdf")
-knitr::plot_crop("fig_ageboth.pdf")
-
-library(ggridges)
-fig_ageoutgroup <- aged2 %>% 
-  as_tibble() %>% 
-  mutate(outgroup = factor(outgroup, levels = c("Tani-Yidu", "Chinese-Sal", "Chinese", "all"))) %>% 
-  ggplot(aes(x = age, y = outgroup, fill = outgroup, height = stat(density))) +
+ages_outgroup %>%
+  ggplot(aes(x = age * 1000, y = fct_rev(label), fill = fct_rev(label), height = after_stat(density))) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
   scale_fill_manual(values = c(rep(few_pal("Light")(2)[1], 3), "grey"), guide = "none") +
-  # xlim(0, 15000) +
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.4))) +
-  theme_minimal() +
-  xlab("years BP") +
+  xlab("root age (years BP)") +
   ylab("first branch") +
-  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
+  theme(aspect.ratio = 0.618)
+ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("fig_ageoutgroup.pdf")
 
-pdf("fig_ageoutgroup.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
-fig_ageoutgroup
-dev.off()
-embedFonts("fig_ageoutgroup.pdf")
-knitr::plot_crop("fig_ageoutgroup.pdf")
 
 ###### MRCA ages
 
-mrca.age = function(tree, tips) {
+getMRCA_age <- function(tree, tips) {
   tips <- if (is.character(tips)) which(tree$tip.label %in% tips) else tips
   mrca <- ifelse(length(tips) > 1, getMRCA(tree, tips), tips)
   root_age <- max(node.depth.edgelength(tree))
   root_age - node.depth.edgelength(tree)[mrca]
 }
 
-mrca.summary <- function(d, l) {
-  sapply(d, mrca.age, tips=l)
-}
+tips <- tt[[1]]$tip.label |>
+  str_subset("Jingpho|Rabha|Chinese")
+sinitic_sal <- st_tree |>
+  seq_along() |>
+  map_df(~
+           tibble(
+             age = getMRCA_age(tt[[.x]], tips),
+             monophyletic = ifelse(is.monophyletic(tt[[.x]], tips), "monophyletic", "paraphyletic")
+           )) %>%
+  bind_rows(mutate(., monophyletic = "either"))
 
-# Plot of MRCA age for the following languages: Jingpho, Rabha, 4 Chinese dialects
-ll <- tt[[1]]$tip.label
-l <- c(7, 12, 13:16) # indices of the languages of interest in vector ll
-ages <- mrca.summary(tt, l)
-lab <- sapply(tt, is.monophyletic, tips = l)
-df <- data.frame(age = ages, monophyletic = lab)
-
-p.age.topo.group <- ggplot(df, aes(x = age)) +
-  geom_density(aes(group = monophyletic, colour = monophyletic, fill = monophyletic), alpha = .3)
-
-p.age.topo.all <- ggplot(df, aes(x = age)) +
-  geom_density(fill = col, colour = col, alpha = .3)
-
-title <- ggdraw() + draw_label("Age of MRCA", fontface = "bold")
-
-plot_grid(title, p.age.topo.all, p.age.topo.group, align = "v", axis = "rblt", ncol = 1, rel_heights = c(0.2, 1, 1))
-
-library(tidyverse)
-fig_agemono <- df %>% 
-  mutate(group = ifelse(monophyletic == TRUE, "monophyletic", "paraphyletic")) %>% 
-  bind_rows(mutate(df, group = "all")) %>% 
-  ggplot(aes(x = age * 1000, y = fct_rev(group), fill = group, height = stat(density))) +
+sinitic_sal |>
+  ggplot(aes(x = age * 1000, y = fct_rev(monophyletic), fill = monophyletic, height = after_stat(density))) +
   stat_density_ridges(quantile_lines = TRUE, quantiles = 2, color = "white") +
   geom_density_ridges(fill = NA, color = "gray40") +
   scale_fill_manual(values = c("grey", rep(few_pal("Light")(2)[1], 2)), guide = "none") +
-  # xlim(0, 15000) +
   scale_x_reverse(limits = c(15000, 0)) +
   scale_y_discrete(expand = expansion(add = c(0.25, 1.25))) +
-  theme_minimal() +
-  xlab("years BP") +
-  ylab(NULL) +
-  theme(axis.text.y.left = element_text(size = 11), axis.title = element_text(size = 9))
+  xlab("root age (years BP)") +
+  ylab("status of Chinese-Sal") +
+  theme(aspect.ratio = 0.618)
+ggsave("fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("fig_agemono.pdf")
 
-
-pdf("fig_agemono.pdf", pointsize=10, width = 5, height = 5/1.6, family = "URWPalladio")
-fig_agemono
-dev.off()
-embedFonts("fig_agemono.pdf")
-knitr::plot_crop("fig_agemono.pdf")
 
 # Cross-validation of dates -----------------------------------------------
 library(HDInterval)
