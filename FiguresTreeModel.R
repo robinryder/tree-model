@@ -29,7 +29,7 @@ update_geom_defaults("text", list(family = base_font, size = base_font_size / .p
 
 # Import data -------------------------------------------------------------
 
-tt <- read.nexus("SinoTibetanSubset.nex")
+tt <- read.nexus("data/SinoTibetanSubset.nex")
 
 
 # Consensus tree ----------------------------------------------------------
@@ -42,12 +42,12 @@ cons$node.label <- round(cons$node.label * 100, 0)
 ct <- consensus.edges(tt, consensus.tree = cons, rooted = TRUE)
 ct$root.edge <- .15
 
-pdf("fig_consensus.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
+pdf("figures/fig_consensus.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
 plot(ct, show.node.label=FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
 nodelabels(c(NA, ct$node.label[-1]), frame="none", adj = c(1.15,1.25), cex = .9)
 dev.off()
-embedFonts("fig_consensus.pdf")
-plot_crop("fig_consensus.pdf")
+embedFonts("figures/fig_consensus.pdf")
+plot_crop("figures/fig_consensus.pdf")
 
 
 # MCC tree --------------------------------------------------------------------------------------------------------
@@ -55,13 +55,13 @@ plot_crop("fig_consensus.pdf")
 mcct <- ladderize(maxCladeCred(tt))
 mcct$node.label <- round(mcct$node.label * 100, 0)
 mcct$root.edge <- .15
-pdf("fig_mcc.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
+pdf("figures/fig_mcc.pdf", pointsize=10, width = 6.3, height = 4, family = base_font2)
 plot(mcct, show.node.label = FALSE, root.edge = TRUE, no.margin = TRUE, font = 1, label.offset = .05)
 nodelabels(c(NA, mcct$node.label[2], NA, mcct$node.label[c(-1:-3)]), frame = "none", adj = c(1.15, 1.25), cex = .9)
 nodelabels(c(NA, NA, mcct$node.label[3], rep(NA, length(mcct$node.label) - 3)), frame = "none", adj = c(1.15, -.25), cex = .9)
 dev.off()
-embedFonts("fig_mcc.pdf")
-plot_crop("fig_mcc.pdf")
+embedFonts("figures/fig_mcc.pdf")
+plot_crop("figures/fig_mcc.pdf")
 
 # Densitree ---------------------------------------------------------------
 
@@ -70,14 +70,14 @@ class(tt_scaled) <- "multiPhylo"
 maxBT <- max(phangorn:::getAges(tt_scaled))
 label <- rev(pretty(c(maxBT, 0)))
 maxBT <- max(label)
-pdf("fig_densitree.pdf", pointsize = 10, width = 5.025, height = 6, family = "URWPalladio")
+pdf("figures/fig_densitree.pdf", pointsize = 10, width = 5.025, height = 6, family = "URWPalladio")
 par(mar = c(2, 0, 0, .6), xpd = TRUE)
 densiTree(tt_scaled, consensus = cons, alpha = .005, font = 1, label.offset = .01, cex = 1, scale.bar = FALSE)
 axis(side = 1, at = seq(0, 1.0, length.out = length(label)), labels = label, line = -1.5, cex = .9)
 title(xlab = "years BP", line = 1)
 dev.off()
-embedFonts("fig_densitree.pdf")
-plot_crop("fig_densitree.pdf")
+embedFonts("figures/fig_densitree.pdf")
+plot_crop("figures/fig_densitree.pdf")
 
 
 # Root age plot -----------------------------------------------------------
@@ -87,7 +87,7 @@ subtree_support <- function(tips, trees = tt) {
   sapply(trees, is.monophyletic, tips = tips)
 }
 mean(subtree_support(c("Chepang", "Hayu", "Thulung", "Bokar_Tani", "Yidu", "Tshangla")))
-# The 6 leaves listed above form a subtree with posterior probability 0.41
+# The 6 leaves listed above form a subtree with posterior probability 0.42
 
 # Creating the plot for the root age depending on the outgroup
 # Lists of outgroups
@@ -139,8 +139,8 @@ ages_outgroup %>%
   xlab("root age (years BP)") +
   ylab("first branch") +
   theme(aspect.ratio = 0.618)
-ggsave("fig_ageoutgroup.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
-plot_crop("fig_ageoutgroup.pdf")
+ggsave("figures/fig_ageoutgroup.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("figures/fig_ageoutgroup.pdf")
 
 
 ###### MRCA ages
@@ -154,7 +154,7 @@ getMRCA_age <- function(tree, tips) {
 
 tips <- tt[[1]]$tip.label |>
   str_subset("Jingpho|Rabha|Chinese")
-sinitic_sal <- st_tree |>
+sinitic_sal <- tt |>
   seq_along() |>
   map_df(~
            tibble(
@@ -173,8 +173,8 @@ sinitic_sal |>
   xlab("root age (years BP)") +
   ylab("status of Chinese-Sal") +
   theme(aspect.ratio = 0.618)
-ggsave("fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
-plot_crop("fig_agemono.pdf")
+ggsave("figures/fig_agemono.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("figures/fig_agemono.pdf")
 
 
 # Cross-validation of dates -----------------------------------------------
@@ -190,10 +190,10 @@ known <- tribble(
 ) |>
   mutate(type = "known")
 
-oldburmese_trees <- read.nexus("xval/Burmese.nex")
-commonchinese_trees <- read.nexus("xval/CommonChinese.nex")
-oldchinese_trees <- read.nexus("xval/Chinese.nex")
-oldtibetan_trees <- read.nexus("xval/Tibetan.nex")
+oldburmese_trees <- read.nexus("data/Burmese.nex")
+commonchinese_trees <- read.nexus("data/CommonChinese.nex")
+oldchinese_trees <- read.nexus("data/Chinese.nex")
+oldtibetan_trees <- read.nexus("data/Tibetan.nex")
 
 getMRCA_ages <- function(trees, tips, burnin = 0, label = NULL) {
   if (is.null(label)) label <- tips
@@ -223,8 +223,8 @@ bind_rows(
   scale_y_discrete(limits = rev, expand = expansion(add = c(0.25, .25))) +
   theme(aspect.ratio = 0.618, legend.position = "top")
 
-ggsave("fig_xages.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
-plot_crop("fig_xages.pdf")
+ggsave("figures/fig_xages.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("figures/fig_xages.pdf")
 
 
 
