@@ -26,6 +26,7 @@ theme_set(
 )
 update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
 
+
 # Import data -------------------------------------------------------------
 
 tt <- read.nexus("SinoTibetanSubset.nex")
@@ -177,9 +178,57 @@ plot_crop("fig_agemono.pdf")
 
 
 # Cross-validation of dates -----------------------------------------------
-library(HDInterval)
 
 # True age intervals
+
+known <- tribble(
+  ~language, ~lower, ~upper,
+  "Old Tibetan", 1000, 1200,
+  "Old Burmese", 700, 900,
+  "Common Chinese", 2000, 2200,
+  "Old Chinese", 2300, 2800
+) |>
+  mutate(type = "known")
+
+oldburmese_trees <- read.nexus("xval/Burmese.nex")
+commonchinese_trees <- read.nexus("xval/CommonChinese.nex")
+oldchinese_trees <- read.nexus("xval/Chinese.nex")
+oldtibetan_trees <- read.nexus("xval/Tibetan.nex")
+
+getMRCA_ages <- function(trees, tips, burnin = 0, label = NULL) {
+  if (is.null(label)) label <- tips
+  trees <- trees[round(length(trees) * burnin):length(trees)]
+  seq_along(trees) |>
+    map_dbl(~ getMRCA_age(trees[[.x]], tips)) |>
+    hdi() |>
+    rbind() |>
+    as_tibble() |>
+    mutate(language = label, type = "inferred")
+}
+
+bind_rows(
+  known,
+  getMRCA_ages(oldchinese_trees, "SiniticOldChinese", .2, "Old Chinese"),
+  getMRCA_ages(oldtibetan_trees, "TibetanOldTibetan", .2, "Old Tibetan"),
+  getMRCA_ages(oldburmese_trees, "BurmishOldBurmese", .2, "Old Burmese"),
+  getMRCA_ages(commonchinese_trees, commonchinese_trees[[1]]$tip.label |> str_subset("Sinitic[^O]"), .2, "Common Chinese")
+) |>
+  mutate(language = str_replace(language, " ", "\n")) |>
+  ggplot(aes(y = language, x = (lower + upper) / 2, xmin = lower, xmax = upper)) +
+  geom_linerange(aes(color = fct_rev(type)), position = position_dodge2(reverse = TRUE, width = c(.35)), linewidth = 4) +
+  xlab("years BP") +
+  ylab(NULL) +
+  scale_color_few(name = NULL) +
+  scale_x_reverse(limits = c(3000, 0)) +
+  scale_y_discrete(limits = rev, expand = expansion(add = c(0.25, .25))) +
+  theme(aspect.ratio = 0.618, legend.position = "top")
+
+ggsave("fig_xages.pdf", width = wd, height = wd * .8, units = "in", device = cairo_pdf)
+plot_crop("fig_xages.pdf")
+
+
+
+
 true.tibetan = c(1000, 1200)
 true.burmish = c(700, 900)
 true.commonchinese = c(2000, 2200)
