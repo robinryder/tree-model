@@ -26,6 +26,7 @@ theme_set(
 )
 update_geom_defaults("text", list(family = base_font, size = base_font_size / .pt))
 
+dir.create("figures", showWarnings = FALSE)
 
 # Import data -------------------------------------------------------------
 
